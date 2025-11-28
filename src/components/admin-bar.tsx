@@ -5,13 +5,33 @@ import { Lock, LockOpen, Eye, EyeOff } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 export function AdminBar() {
-  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [isLoggedIn, setIsLoggedIn] = useState(false); // Start with false to avoid hydration mismatch
   const [isVisible, setIsVisible] = useState(true);
+  const [isMounted, setIsMounted] = useState(false);
 
-  // Load state from localStorage
+  // Load state from localStorage on mount
   useEffect(() => {
-    const stored = localStorage.getItem('admin_logged_in');
-    if (stored) setIsLoggedIn(stored === 'true');
+    setIsMounted(true);
+    const checkLoginState = () => {
+      const stored = localStorage.getItem('admin_logged_in');
+      if (stored !== null) {
+        setIsLoggedIn(stored === 'true');
+      } else {
+        // Default to logged in if no stored value
+        setIsLoggedIn(true);
+        localStorage.setItem('admin_logged_in', 'true');
+      }
+    };
+    
+    // Check immediately
+    checkLoginState();
+    
+    // Listen for storage changes (e.g., from other tabs/components)
+    window.addEventListener('storage', checkLoginState);
+    
+    return () => {
+      window.removeEventListener('storage', checkLoginState);
+    };
   }, []);
 
   // Save state to localStorage
@@ -34,8 +54,13 @@ export function AdminBar() {
     );
   }
 
+  // Don't render until mounted to avoid hydration mismatch
+  if (!isMounted) {
+    return null;
+  }
+
   return (
-    <div className="fixed bottom-0 left-0 right-0 z-50 bg-gradient-to-r from-stone-900 to-stone-800 text-white shadow-lg border-t-2 border-amber-500">
+    <div className="fixed bottom-0 left-0 right-0 z-50 bg-gradient-to-r from-stone-900 to-stone-800 text-white shadow-lg border-t-2 border-amber-500" suppressHydrationWarning>
       <div className="container mx-auto px-4 py-3 flex items-center justify-between">
         <div className="flex items-center gap-4">
           <div className="flex items-center gap-2">

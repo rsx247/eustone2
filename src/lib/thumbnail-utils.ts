@@ -1,8 +1,8 @@
 /**
- * Smart Thumbnail Display System with Auto-Detection
+ * Smart Thumbnail Display System
  * 
  * Default Behavior: 1:1 (square) with cover (crop to fill)
- * Exception: Products with text/labels use 4:3 with contain (show full image)
+ * Exception: Only "Titan Prof Tile Level Voetstuk" products use 4:3 with contain
  * Override: Product-level settings can bypass defaults
  */
 
@@ -13,28 +13,12 @@ interface ThumbnailStyle {
 }
 
 /**
- * Detects if a product likely has text/labels based on name patterns
+ * Checks if product is the specific Titan Voetstuk product that needs 4:3 aspect ratio
  */
-function hasTextLabel(productName: string, categoryName: string): boolean {
+function isTitanVoetstukProduct(productName: string): boolean {
   const name = productName.toLowerCase();
-  const cat = categoryName.toLowerCase();
-  
-  // Common text-heavy product patterns
-  const textPatterns = [
-    'titan prof',     // Titan Professional tools
-    'ox trade',       // OX Trade branded items
-    'kalekim',        // Kalekim products
-    'schonox',        // Schonox products
-    'eltex',          // Eltex profiles
-    'tegelkruis',     // Tile spacers
-    'tegelprofiel',   // Tile profiles
-    'lijm',           // Adhesives
-    'kit',            // Sealants
-    'profiel',        // Profiles
-    'spaan',          // Trowels
-  ];
-  
-  return textPatterns.some(pattern => name.includes(pattern));
+  // Only match the exact Titan Prof Tile Level Voetstuk products
+  return name.includes('titan prof tile level voetstuk');
 }
 
 /**
@@ -88,9 +72,8 @@ export function getThumbnailClass(
     };
   }
   
-  // SMART DEFAULT: Check if product has text labels
-  if (hasTextLabel(productName, categoryName)) {
-    // Text-heavy products: use 4:3 with contain to show full label
+  // EXCEPTION: Only Titan Prof Tile Level Voetstuk products use 4:3
+  if (isTitanVoetstukProduct(productName)) {
     return {
       container: 'aspect-[4/3]',
       image: 'object-contain',
@@ -98,11 +81,11 @@ export function getThumbnailClass(
     };
   }
   
-  // DEFAULT: Square 1:1 with cover (crop to fill)
+  // DEFAULT: Square 1:1 with cover (crop to fill) for all other products
   return {
     container: 'aspect-square',
     image: 'object-cover',
-    padding: 'p-1'
+    padding: 'p-0'
   };
 }
 
@@ -130,13 +113,12 @@ export async function suggestThumbnailSettings(
   productName: string,
   categoryName: string
 ): Promise<{ aspectRatio: string; fit: string; reason: string }> {
-  const hasText = hasTextLabel(productName, categoryName);
-  
-  if (hasText) {
+  // Check for Titan Voetstuk exception
+  if (isTitanVoetstukProduct(productName)) {
     return {
       aspectRatio: 'landscape',
       fit: 'contain',
-      reason: 'Product has text/labels - using landscape + contain to prevent cropping'
+      reason: 'Titan Prof Tile Level Voetstuk product - using landscape + contain to show full label'
     };
   }
   
@@ -144,15 +126,15 @@ export async function suggestThumbnailSettings(
   if (typeof window !== 'undefined') {
     const detected = await detectImageAspectRatio(imageUrl);
     return {
-      aspectRatio: detected,
-      fit: detected === 'square' ? 'cover' : 'contain',
-      reason: `Detected ${detected} aspect ratio from image analysis`
+      aspectRatio: detected === 'square' ? 'square' : 'square', // Force square for consistency
+      fit: 'cover',
+      reason: 'Default: square with cover for consistent card heights'
     };
   }
   
   return {
     aspectRatio: 'square',
     fit: 'cover',
-    reason: 'Default: square with cover'
+    reason: 'Default: square with cover for consistent card heights'
   };
 }

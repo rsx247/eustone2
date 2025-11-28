@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -8,36 +8,287 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Slider } from "@/components/ui/slider";
 import { Switch } from "@/components/ui/switch";
-import { Search, Filter, X, ChevronDown, SlidersHorizontal, Grid, List, Check, ShoppingCart, Heart, Eye, Sparkles, ChevronLeft, ChevronRight } from "lucide-react";
+import { Search, Filter, X, ChevronDown, SlidersHorizontal, Grid, List, Check, ShoppingCart, Heart, Eye, EyeOff, Sparkles, ChevronLeft, ChevronRight, ChevronRightIcon, ChevronLeftIcon } from "lucide-react";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { Label } from "@/components/ui/label";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
 
+type SectionKey = 
+  | "filter1" | "filter2" | "filter3" | "filter4" | "filter5"
+  | "microanimations" | "quickview" | "quickview-detail" 
+  | "nav-dots" | "nav-chevrons" | "product-card" 
+  | "price-display" | "loading" | "badge" | "heart" | "cart-animations";
+
+interface SectionComponentProps {
+  isVisible: boolean;
+  onToggle: () => void;
+  sectionKey: SectionKey;
+}
+
+const SECTION_CONFIG: { key: SectionKey; label: string; component: (props: SectionComponentProps) => JSX.Element }[] = [
+  { key: "filter1", label: "Filter Approach 1", component: FilterApproach1 },
+  { key: "filter2", label: "Filter Approach 2", component: FilterApproach2 },
+  { key: "filter3", label: "Filter Approach 3", component: FilterApproach3 },
+  { key: "filter4", label: "Filter Approach 4", component: FilterApproach4 },
+  { key: "filter5", label: "Filter Approach 5", component: FilterApproach5 },
+  { key: "microanimations", label: "Microanimations", component: MicroanimationsSection },
+  { key: "quickview", label: "Quick View Approaches", component: QuickViewApproaches },
+  { key: "quickview-detail", label: "Quick View Detail Variants", component: QuickViewDetailModeVariants },
+  { key: "nav-dots", label: "Navigation Dots", component: NavigationDotsVariants },
+  { key: "nav-chevrons", label: "Navigation Chevrons", component: NavigationWithChevronsVariants },
+  { key: "product-card", label: "Product Card Layouts", component: ProductCardLayoutVariants },
+  { key: "price-display", label: "Price Display Styles", component: PriceDisplayStyles },
+  { key: "loading", label: "Loading States", component: LoadingStateVariants },
+  { key: "badge", label: "Badge & Status", component: BadgeStatusVariants },
+  { key: "heart", label: "Heart Placement", component: HeartPlacementVariants },
+  { key: "cart-animations", label: "Cart Animations", component: VisualCartMicroanimations },
+];
+
 export default function PlaygroundPage() {
+  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
+  const [isMounted, setIsMounted] = useState(false);
+  
+  // Use Set for more reliable tracking
+  const [visibleSections, setVisibleSections] = useState<Set<SectionKey>>(() => {
+    // Initialize all sections as visible by default
+    const defaultSet = new Set<SectionKey>();
+    SECTION_CONFIG.forEach(section => {
+      defaultSet.add(section.key);
+    });
+    return defaultSet;
+  });
+
+  // Load from localStorage on mount
+  useEffect(() => {
+    setIsMounted(true);
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('playground-visible-sections');
+      if (saved) {
+        try {
+          const parsed = JSON.parse(saved);
+          // Handle both old object format and new array format
+          if (Array.isArray(parsed)) {
+            setVisibleSections(new Set(parsed));
+            console.log('[Playground] Loaded visible sections from localStorage:', parsed);
+          } else if (typeof parsed === 'object') {
+            // Convert old object format to Set
+            const newSet = new Set<SectionKey>();
+            SECTION_CONFIG.forEach(section => {
+              if (parsed[section.key] !== false) {
+                newSet.add(section.key);
+              }
+            });
+            setVisibleSections(newSet);
+            console.log('[Playground] Converted old format, visible sections:', Array.from(newSet));
+          }
+        } catch (e) {
+          console.error('[Playground] Failed to parse localStorage:', e);
+        }
+      } else {
+        console.log('[Playground] No saved state, using defaults');
+      }
+    }
+  }, []);
+
+  // Save to localStorage whenever visibility changes
+  useEffect(() => {
+    if (isMounted && typeof window !== 'undefined') {
+      const array = Array.from(visibleSections);
+      localStorage.setItem('playground-visible-sections', JSON.stringify(array));
+      console.log('[Playground] Saved visible sections to localStorage:', array);
+    }
+  }, [visibleSections, isMounted]);
+
+  const isSectionVisible = (key: SectionKey): boolean => {
+    return visibleSections.has(key);
+  };
+
+  const toggleSection = (key: SectionKey) => {
+    console.log('[Playground] Toggling section:', key, 'Current state:', isSectionVisible(key));
+    setVisibleSections(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(key)) {
+        newSet.delete(key);
+        console.log('[Playground] Hiding section:', key);
+      } else {
+        newSet.add(key);
+        console.log('[Playground] Showing section:', key);
+      }
+      console.log('[Playground] New visible sections:', Array.from(newSet));
+      return newSet;
+    });
+  };
+
+  const showAll = () => {
+    console.log('[Playground] Showing all sections');
+    const allVisible = new Set<SectionKey>();
+    SECTION_CONFIG.forEach(section => {
+      allVisible.add(section.key);
+    });
+    setVisibleSections(allVisible);
+    console.log('[Playground] All sections visible:', Array.from(allVisible));
+  };
+
+  const hideAll = () => {
+    console.log('[Playground] Hiding all sections');
+    setVisibleSections(new Set<SectionKey>());
+    console.log('[Playground] All sections hidden');
+  };
+
+  const scrollToSection = (key: SectionKey) => {
+    const element = document.getElementById(`section-${key}`);
+    if (element) {
+      element.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+  };
+
   return (
-    <div className="space-y-12 pb-20">
-      <div>
-        <h1 className="text-3xl font-bold text-stone-900">Product Filtering Playground</h1>
-        <p className="text-stone-500">Exploring 5 different UI paradigms for product discovery.</p>
+    <div className="flex gap-6 pb-20">
+      {/* Sticky Sidebar Navigation */}
+      <div className={`sticky top-16 h-[calc(100vh-4rem)] flex-shrink-0 border-r border-stone-200 pr-4 transition-all duration-300 flex flex-col ${
+        isSidebarCollapsed ? 'w-12' : 'w-64'
+      }`}>
+        <div className="space-y-4 flex flex-col h-full">
+          <div className="flex items-center justify-between mb-2 flex-shrink-0">
+            {!isSidebarCollapsed && <h2 className="text-lg font-bold text-stone-900">Sections</h2>}
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
+              className="ml-auto"
+            >
+              {isSidebarCollapsed ? (
+                <ChevronRightIcon className="w-4 h-4" />
+              ) : (
+                <ChevronLeftIcon className="w-4 h-4" />
+              )}
+            </Button>
+          </div>
+          
+          {!isSidebarCollapsed && (
+            <>
+              <div className="flex gap-2 mb-4 flex-shrink-0">
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  onClick={showAll}
+                  className="text-xs flex-1"
+                >
+                  Show All
+                </Button>
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  onClick={hideAll}
+                  className="text-xs flex-1"
+                >
+                  Hide All
+                </Button>
+              </div>
+              
+              <ScrollArea className="flex-1 min-h-0">
+                <div className="space-y-1">
+                  {SECTION_CONFIG.map((section) => {
+                    const isVisible = isSectionVisible(section.key);
+                    return (
+                      <div
+                        key={section.key}
+                        className={`w-full flex items-center gap-2 px-3 py-2 rounded-md text-sm transition-colors ${
+                          isVisible
+                            ? 'bg-stone-100 text-stone-900 hover:bg-stone-200'
+                            : 'text-stone-500 hover:bg-stone-50'
+                        }`}
+                      >
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            toggleSection(section.key);
+                          }}
+                          className="flex-shrink-0 p-1 hover:bg-stone-200/50 rounded transition-colors"
+                          aria-label={isVisible ? "Hide section" : "Show section"}
+                        >
+                          {isVisible ? (
+                            <Eye className="w-4 h-4" />
+                          ) : (
+                            <EyeOff className="w-4 h-4" />
+                          )}
+                        </button>
+                        <button
+                          onClick={() => scrollToSection(section.key)}
+                          className="flex-1 text-left truncate hover:underline transition-all"
+                        >
+                          {section.label}
+                        </button>
+                      </div>
+                    );
+                  })}
+                </div>
+              </ScrollArea>
+            </>
+          )}
+          
+          {isSidebarCollapsed && (
+            <ScrollArea className="flex-1 min-h-0">
+              <div className="space-y-1">
+                {SECTION_CONFIG.map((section) => {
+                  const isVisible = isSectionVisible(section.key);
+                  return (
+                    <button
+                      key={section.key}
+                      onClick={() => toggleSection(section.key)}
+                      className={`w-full flex items-center justify-center p-2 rounded-md text-sm transition-colors ${
+                        isVisible
+                          ? 'bg-stone-100 text-stone-900 hover:bg-stone-200'
+                          : 'text-stone-500 hover:bg-stone-50'
+                      }`}
+                      title={section.label}
+                    >
+                      {isVisible ? (
+                        <Eye className="w-4 h-4" />
+                      ) : (
+                        <EyeOff className="w-4 h-4" />
+                      )}
+                    </button>
+                  );
+                })}
+              </div>
+            </ScrollArea>
+          )}
+        </div>
       </div>
 
-      <FilterApproach1 />
-      <FilterApproach2 />
-      <FilterApproach3 />
-      <FilterApproach4 />
-      <FilterApproach5 />
-      
-      <MicroanimationsSection />
-      <QuickViewApproaches />
-      <NavigationDotsVariants />
-      <NavigationWithChevronsVariants />
-      <ProductCardLayoutVariants />
-      <PriceDisplayStyles />
-      <LoadingStateVariants />
-      <BadgeStatusVariants />
-      <HeartPlacementVariants />
-      <VisualCartMicroanimations />
+      {/* Main Content */}
+      <div className="flex-1 space-y-12">
+        <div>
+          <h1 className="text-3xl font-bold text-stone-900">Product Filtering Playground</h1>
+          <p className="text-stone-500">Exploring 5 different UI paradigms for product discovery.</p>
+        </div>
+
+        {SECTION_CONFIG.map((section) => {
+          const isVisible = isSectionVisible(section.key);
+          // Dirty workaround: Always render, but collapse to 0px height when hidden
+          // This maintains hook count while visually hiding the content
+          return (
+            <section 
+              key={section.key} 
+              id={`section-${section.key}`} 
+              className={`scroll-mt-24 transition-all duration-300 ${
+                (!isMounted || isVisible) 
+                  ? 'max-h-none opacity-100 overflow-visible' 
+                  : 'max-h-0 opacity-0 overflow-hidden pointer-events-none'
+              }`}
+              aria-hidden={!isMounted || isVisible ? false : true}
+            >
+              {section.component({ 
+                isVisible, 
+                onToggle: () => toggleSection(section.key),
+                sectionKey: section.key 
+              })}
+            </section>
+          );
+        })}
+      </div>
     </div>
   );
 }
@@ -45,13 +296,17 @@ export default function PlaygroundPage() {
 // ----------------------------------------------------------------------------
 // Approach 1: Classic E-commerce Sidebar (The "Amazon" / "Zalando" style)
 // ----------------------------------------------------------------------------
-function FilterApproach1() {
+function FilterApproach1({ isVisible, onToggle }: SectionComponentProps) {
   return (
     <section className="space-y-4">
-      <h2 className="text-xl font-semibold flex items-center gap-2">
+      <h2 
+        className="text-xl font-semibold flex items-center gap-2 cursor-pointer hover:bg-stone-50 p-2 -m-2 rounded transition-colors"
+        onClick={onToggle}
+      >
         <Badge variant="outline" className="h-6 w-6 flex items-center justify-center rounded-full p-0">1</Badge>
         Classic Sidebar
         <span className="text-sm font-normal text-stone-400 ml-auto">Best for: Large catalogs, Desktop</span>
+        <ChevronDown className={`w-5 h-5 text-stone-400 transition-transform duration-200 ${isVisible ? '' : '-rotate-90'}`} />
       </h2>
       <Card className="overflow-hidden bg-stone-50 border-stone-200">
         <div className="flex h-[500px]">
@@ -127,13 +382,17 @@ function FilterApproach1() {
 // ----------------------------------------------------------------------------
 // Approach 2: Top Bar Dropdowns (The "Airbnb" / "Notion" style)
 // ----------------------------------------------------------------------------
-function FilterApproach2() {
+function FilterApproach2({ isVisible, onToggle }: SectionComponentProps) {
   return (
     <section className="space-y-4">
-      <h2 className="text-xl font-semibold flex items-center gap-2">
+      <h2 
+        className="text-xl font-semibold flex items-center gap-2 cursor-pointer hover:bg-stone-50 p-2 -m-2 rounded transition-colors"
+        onClick={onToggle}
+      >
         <Badge variant="outline" className="h-6 w-6 flex items-center justify-center rounded-full p-0">2</Badge>
         Top Bar Dropdowns
         <span className="text-sm font-normal text-stone-400 ml-auto">Best for: Clean look, Medium complexity</span>
+        <ChevronDown className={`w-5 h-5 text-stone-400 transition-transform duration-200 ${isVisible ? '' : '-rotate-90'}`} />
       </h2>
       <Card className="bg-white border-stone-200 min-h-[300px]">
         <div className="border-b p-4 flex items-center gap-2 overflow-x-auto">
@@ -166,13 +425,17 @@ function FilterApproach2() {
 // ----------------------------------------------------------------------------
 // Approach 3: Visual Chip Carousel (The "Spotify" / "Pinterest" style)
 // ----------------------------------------------------------------------------
-function FilterApproach3() {
+function FilterApproach3({ isVisible, onToggle }: SectionComponentProps) {
   return (
     <section className="space-y-4">
-      <h2 className="text-xl font-semibold flex items-center gap-2">
+      <h2 
+        className="text-xl font-semibold flex items-center gap-2 cursor-pointer hover:bg-stone-50 p-2 -m-2 rounded transition-colors"
+        onClick={onToggle}
+      >
         <Badge variant="outline" className="h-6 w-6 flex items-center justify-center rounded-full p-0">3</Badge>
         Visual Chip Carousel
         <span className="text-sm font-normal text-stone-400 ml-auto">Best for: Mobile, Quick Selection</span>
+        <ChevronDown className={`w-5 h-5 text-stone-400 transition-transform duration-200 ${isVisible ? '' : '-rotate-90'}`} />
       </h2>
       <Card className="bg-stone-900 text-white border-stone-800 min-h-[300px]">
         <div className="p-6 space-y-6">
@@ -224,13 +487,17 @@ function FilterApproach3() {
 // ----------------------------------------------------------------------------
 // Approach 4: The "Mad Libs" Sentence Builder (The "Natural Language" style)
 // ----------------------------------------------------------------------------
-function FilterApproach4() {
+function FilterApproach4({ isVisible, onToggle }: SectionComponentProps) {
   return (
     <section className="space-y-4">
-      <h2 className="text-xl font-semibold flex items-center gap-2">
+      <h2 
+        className="text-xl font-semibold flex items-center gap-2 cursor-pointer hover:bg-stone-50 p-2 -m-2 rounded transition-colors"
+        onClick={onToggle}
+      >
         <Badge variant="outline" className="h-6 w-6 flex items-center justify-center rounded-full p-0">4</Badge>
         Sentence Builder
         <span className="text-sm font-normal text-stone-400 ml-auto">Best for: Inspiration, Guided Discovery</span>
+        <ChevronDown className={`w-5 h-5 text-stone-400 transition-transform duration-200 ${isVisible ? '' : '-rotate-90'}`} />
       </h2>
       <Card className="bg-stone-50 border-stone-200 p-12 flex flex-col items-center justify-center min-h-[300px]">
          <div className="text-2xl md:text-3xl font-serif text-center leading-relaxed text-stone-800 max-w-3xl">
@@ -254,13 +521,17 @@ function FilterApproach4() {
 // ----------------------------------------------------------------------------
 // Approach 5: Split View with Sticky Filter (The "Linear" / "Modern App" style)
 // ----------------------------------------------------------------------------
-function FilterApproach5() {
+function FilterApproach5({ isVisible, onToggle }: SectionComponentProps) {
   return (
     <section className="space-y-4">
-      <h2 className="text-xl font-semibold flex items-center gap-2">
+      <h2 
+        className="text-xl font-semibold flex items-center gap-2 cursor-pointer hover:bg-stone-50 p-2 -m-2 rounded transition-colors"
+        onClick={onToggle}
+      >
         <Badge variant="outline" className="h-6 w-6 flex items-center justify-center rounded-full p-0">5</Badge>
         Modern Toolbar (Current Implementation)
         <span className="text-sm font-normal text-stone-400 ml-auto">Best for: Efficiency, Cleanliness</span>
+        <ChevronDown className={`w-5 h-5 text-stone-400 transition-transform duration-200 ${isVisible ? '' : '-rotate-90'}`} />
       </h2>
       <Card className="bg-white border-stone-200 min-h-[300px]">
          <div className="p-4 space-y-4">
@@ -307,13 +578,19 @@ function FilterApproach5() {
 // ----------------------------------------------------------------------------
 // Microanimations Section - 5 Options for Add to Cart & Like Buttons
 // ----------------------------------------------------------------------------
-function MicroanimationsSection() {
+function MicroanimationsSection({ isVisible, onToggle }: SectionComponentProps) {
   const [activeAnim, setActiveAnim] = useState<string | null>(null);
   
   return (
     <section className="space-y-4">
       <div>
-        <h2 className="text-2xl font-bold text-stone-900 mb-2">Microanimations Playground</h2>
+        <h2 
+          className="text-2xl font-bold text-stone-900 mb-2 cursor-pointer hover:bg-stone-50 p-2 -m-2 rounded transition-colors flex items-center gap-2"
+          onClick={onToggle}
+        >
+          Microanimations Playground
+          <ChevronDown className={`w-5 h-5 text-stone-400 transition-transform duration-200 ${isVisible ? '' : '-rotate-90'}`} />
+        </h2>
         <p className="text-stone-500">5 different animation styles for Add to Cart and Like buttons. Click to test each one.</p>
       </div>
       
@@ -480,11 +757,17 @@ function MicroanimationsSection() {
 // ----------------------------------------------------------------------------
 // Quick View Approaches - 3 Different Styles/Placements
 // ----------------------------------------------------------------------------
-function QuickViewApproaches() {
+function QuickViewApproaches({ isVisible, onToggle }: SectionComponentProps) {
   return (
     <section className="space-y-4">
       <div>
-        <h2 className="text-2xl font-bold text-stone-900 mb-2">Quick View Button Approaches</h2>
+        <h2 
+          className="text-2xl font-bold text-stone-900 mb-2 cursor-pointer hover:bg-stone-50 p-2 -m-2 rounded transition-colors flex items-center gap-2"
+          onClick={onToggle}
+        >
+          Quick View Button Approaches
+          <ChevronDown className={`w-5 h-5 text-stone-400 transition-transform duration-200 ${isVisible ? '' : '-rotate-90'}`} />
+        </h2>
         <p className="text-stone-500">3 different styles and placements for the Quick View trigger button.</p>
       </div>
       
@@ -541,16 +824,150 @@ function QuickViewApproaches() {
 }
 
 // ----------------------------------------------------------------------------
+// Quick View Detail Mode Variants
+// ----------------------------------------------------------------------------
+function QuickViewDetailModeVariants({ isVisible, onToggle }: SectionComponentProps) {
+  const [selectedVariant, setSelectedVariant] = useState('compact');
+
+  const variants = {
+    compact: {
+      name: 'Compact',
+      description: 'Minimal spacing, essential info only',
+      className: 'p-4 space-y-4'
+    },
+    spacious: {
+      name: 'Spacious',
+      description: 'Generous padding, comfortable reading',
+      className: 'p-8 md:p-12 space-y-6'
+    },
+    card: {
+      name: 'Card Layout',
+      description: 'Information in distinct card sections',
+      className: 'p-6 space-y-4'
+    },
+    minimal: {
+      name: 'Minimal',
+      description: 'Ultra-clean, maximum whitespace',
+      className: 'p-6 md:p-16 space-y-8'
+    }
+  };
+
+  return (
+    <section className="space-y-4">
+      <div>
+        <h2 
+          className="text-2xl font-bold text-stone-900 mb-2 cursor-pointer hover:bg-stone-50 p-2 -m-2 rounded transition-colors flex items-center gap-2"
+          onClick={onToggle}
+        >
+          Quick View Detail Mode Variants
+          <ChevronDown className={`w-5 h-5 text-stone-400 transition-transform duration-200 ${isVisible ? '' : '-rotate-90'}`} />
+        </h2>
+        <p className="text-stone-500">Different layout styles for the detail/text mode in quick view modal.</p>
+      </div>
+
+      <Card className="bg-white border-stone-200 p-6">
+        <div className="mb-6">
+          <Label className="text-sm font-semibold mb-3 block">Select Variant</Label>
+          <div className="flex flex-wrap gap-2">
+            {Object.entries(variants).map(([key, variant]) => (
+              <Button
+                key={key}
+                variant={selectedVariant === key ? 'default' : 'outline'}
+                size="sm"
+                onClick={() => setSelectedVariant(key)}
+                className="text-xs"
+              >
+                {variant.name}
+              </Button>
+            ))}
+          </div>
+        </div>
+
+        <div className="border border-stone-200 rounded-lg overflow-hidden bg-stone-50">
+          <div className={`${variants[selectedVariant as keyof typeof variants].className} max-w-4xl mx-auto`}>
+            {/* Header */}
+            <div className="mb-6">
+              <Badge variant="secondary" className="mb-3 bg-stone-200 text-stone-700">
+                Marble
+              </Badge>
+              <h3 className="text-2xl md:text-3xl font-bold text-stone-900 mb-2">
+                Premium Carrara Marble Slab
+              </h3>
+              <p className="text-stone-500 font-mono text-xs">SKU: carrara-marble-slab-001</p>
+            </div>
+
+            {/* Pricing */}
+            <div className="mb-6 p-4 bg-white rounded-lg border border-stone-200">
+              <div className="flex items-baseline gap-2">
+                <span className="text-3xl font-bold text-stone-900">€125.00</span>
+                <span className="text-sm text-stone-500">/ m²</span>
+              </div>
+              <p className="text-xs text-stone-400 mt-1">Excl. VAT • Trade Pricing</p>
+            </div>
+
+            {/* Description */}
+            <div className="mb-6">
+              <h4 className="text-sm font-bold text-stone-900 uppercase tracking-wider mb-2">Description</h4>
+              <p className="text-stone-700 text-sm leading-relaxed">
+                Premium Carrara marble with classic veining. Perfect for countertops, flooring, and feature walls.
+              </p>
+            </div>
+
+            {/* Specs Grid */}
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+              <div className="p-3 bg-white rounded border border-stone-200">
+                <span className="block text-xs text-stone-400 uppercase mb-1">Material</span>
+                <span className="font-semibold text-stone-900 text-sm">Carrara</span>
+              </div>
+              <div className="p-3 bg-white rounded border border-stone-200">
+                <span className="block text-xs text-stone-400 uppercase mb-1">Finish</span>
+                <span className="font-semibold text-stone-900 text-sm">Polished</span>
+              </div>
+              <div className="p-3 bg-white rounded border border-stone-200">
+                <span className="block text-xs text-stone-400 uppercase mb-1">Origin</span>
+                <span className="font-semibold text-stone-900 text-sm">Italy</span>
+              </div>
+              <div className="p-3 bg-white rounded border border-stone-200">
+                <span className="block text-xs text-stone-400 uppercase mb-1">Stock</span>
+                <span className="text-green-600 font-semibold text-sm">In Stock</span>
+              </div>
+            </div>
+
+            {/* Actions */}
+            <div className="pt-4 border-t border-stone-200">
+              <Button size="lg" className="w-full bg-stone-900 hover:bg-stone-800">
+                <ShoppingCart className="mr-2 w-4 h-4" />
+                Add to Order
+              </Button>
+            </div>
+          </div>
+        </div>
+
+        <p className="text-xs text-stone-500 mt-4">
+          Current: <strong>{variants[selectedVariant as keyof typeof variants].name}</strong> - {variants[selectedVariant as keyof typeof variants].description}
+        </p>
+      </Card>
+    </section>
+  );
+}
+
+// ----------------------------------------------------------------------------
 // Navigation Dots Variants - 3 Different Styles
 // ----------------------------------------------------------------------------
-function NavigationDotsVariants() {
+function NavigationDotsVariants({ isVisible, onToggle }: SectionComponentProps) {
   const [activeIndex, setActiveIndex] = useState(0);
   const dots = [0, 1, 2, 3];
   
   return (
     <section className="space-y-4">
       <div>
-        <h2 className="text-2xl font-bold text-stone-900 mb-2">Navigation Dots Variants</h2>
+        <h2 
+          className="text-2xl font-bold text-stone-900 mb-2 cursor-pointer hover:bg-stone-50 p-2 -m-2 rounded transition-colors flex items-center gap-2"
+          onClick={onToggle}
+        >
+          Navigation Dots Variants
+          <ChevronDown className={`w-5 h-5 text-stone-400 transition-transform duration-200 ${isVisible ? '' : '-rotate-90'}`} />
+        </h2>
         <p className="text-stone-500">3 different styles with primary color contrast for visibility on light and dark backgrounds.</p>
       </div>
       
@@ -625,7 +1042,7 @@ function NavigationDotsVariants() {
 // ----------------------------------------------------------------------------
 // Navigation with Chevrons - 2 Additional Variants
 // ----------------------------------------------------------------------------
-function NavigationWithChevronsVariants() {
+function NavigationWithChevronsVariants({ isVisible, onToggle }: SectionComponentProps) {
   const [activeIndex, setActiveIndex] = useState(0);
   const dots = [0, 1, 2, 3];
   
@@ -635,7 +1052,13 @@ function NavigationWithChevronsVariants() {
   return (
     <section className="space-y-4">
       <div>
-        <h2 className="text-2xl font-bold text-stone-900 mb-2">Navigation with Chevrons Variants</h2>
+        <h2 
+          className="text-2xl font-bold text-stone-900 mb-2 cursor-pointer hover:bg-stone-50 p-2 -m-2 rounded transition-colors flex items-center gap-2"
+          onClick={onToggle}
+        >
+          Navigation with Chevrons Variants
+          <ChevronDown className={`w-5 h-5 text-stone-400 transition-transform duration-200 ${isVisible ? '' : '-rotate-90'}`} />
+        </h2>
         <p className="text-stone-500">2 additional navigation styles combining chevrons and dots on the same line.</p>
       </div>
       
@@ -721,11 +1144,17 @@ function NavigationWithChevronsVariants() {
 // ----------------------------------------------------------------------------
 // Product Card Layout Variants
 // ----------------------------------------------------------------------------
-function ProductCardLayoutVariants() {
+function ProductCardLayoutVariants({ isVisible, onToggle }: SectionComponentProps) {
   return (
     <section className="space-y-4">
       <div>
-        <h2 className="text-2xl font-bold text-stone-900 mb-2">Product Card Layout Variants</h2>
+        <h2 
+          className="text-2xl font-bold text-stone-900 mb-2 cursor-pointer hover:bg-stone-50 p-2 -m-2 rounded transition-colors flex items-center gap-2"
+          onClick={onToggle}
+        >
+          Product Card Layout Variants
+          <ChevronDown className={`w-5 h-5 text-stone-400 transition-transform duration-200 ${isVisible ? '' : '-rotate-90'}`} />
+        </h2>
         <p className="text-stone-500">Different ways to structure product information on cards.</p>
       </div>
       
@@ -778,11 +1207,17 @@ function ProductCardLayoutVariants() {
 // ----------------------------------------------------------------------------
 // Price Display Styles
 // ----------------------------------------------------------------------------
-function PriceDisplayStyles() {
+function PriceDisplayStyles({ isVisible, onToggle }: SectionComponentProps) {
   return (
     <section className="space-y-4">
       <div>
-        <h2 className="text-2xl font-bold text-stone-900 mb-2">Price Display Styles</h2>
+        <h2 
+          className="text-2xl font-bold text-stone-900 mb-2 cursor-pointer hover:bg-stone-50 p-2 -m-2 rounded transition-colors flex items-center gap-2"
+          onClick={onToggle}
+        >
+          Price Display Styles
+          <ChevronDown className={`w-5 h-5 text-stone-400 transition-transform duration-200 ${isVisible ? '' : '-rotate-90'}`} />
+        </h2>
         <p className="text-stone-500">Different ways to show pricing information.</p>
       </div>
       
@@ -826,11 +1261,17 @@ function PriceDisplayStyles() {
 // ----------------------------------------------------------------------------
 // Loading State Variants
 // ----------------------------------------------------------------------------
-function LoadingStateVariants() {
+function LoadingStateVariants({ isVisible, onToggle }: SectionComponentProps) {
   return (
     <section className="space-y-4">
       <div>
-        <h2 className="text-2xl font-bold text-stone-900 mb-2">Loading State Variants</h2>
+        <h2 
+          className="text-2xl font-bold text-stone-900 mb-2 cursor-pointer hover:bg-stone-50 p-2 -m-2 rounded transition-colors flex items-center gap-2"
+          onClick={onToggle}
+        >
+          Loading State Variants
+          <ChevronDown className={`w-5 h-5 text-stone-400 transition-transform duration-200 ${isVisible ? '' : '-rotate-90'}`} />
+        </h2>
         <p className="text-stone-500">Different skeleton and loading indicators for better perceived performance.</p>
       </div>
       
@@ -873,11 +1314,17 @@ function LoadingStateVariants() {
 // ----------------------------------------------------------------------------
 // Badge & Status Variants
 // ----------------------------------------------------------------------------
-function BadgeStatusVariants() {
+function BadgeStatusVariants({ isVisible, onToggle }: SectionComponentProps) {
   return (
     <section className="space-y-4">
       <div>
-        <h2 className="text-2xl font-bold text-stone-900 mb-2">Badge & Status Indicator Variants</h2>
+        <h2 
+          className="text-2xl font-bold text-stone-900 mb-2 cursor-pointer hover:bg-stone-50 p-2 -m-2 rounded transition-colors flex items-center gap-2"
+          onClick={onToggle}
+        >
+          Badge & Status Indicator Variants
+          <ChevronDown className={`w-5 h-5 text-stone-400 transition-transform duration-200 ${isVisible ? '' : '-rotate-90'}`} />
+        </h2>
         <p className="text-stone-500">Different styles for stock status, categories, and product badges.</p>
       </div>
       
@@ -924,13 +1371,19 @@ function BadgeStatusVariants() {
 // ----------------------------------------------------------------------------
 // Heart Placement Variants - 5 Different Placements
 // ----------------------------------------------------------------------------
-function HeartPlacementVariants() {
+function HeartPlacementVariants({ isVisible, onToggle }: SectionComponentProps) {
   const [isFavorited, setIsFavorited] = useState(false);
   
   return (
     <section className="space-y-4">
       <div>
-        <h2 className="text-2xl font-bold text-stone-900 mb-2">Heart Icon Placement Variants</h2>
+        <h2 
+          className="text-2xl font-bold text-stone-900 mb-2 cursor-pointer hover:bg-stone-50 p-2 -m-2 rounded transition-colors flex items-center gap-2"
+          onClick={onToggle}
+        >
+          Heart Icon Placement Variants
+          <ChevronDown className={`w-5 h-5 text-stone-400 transition-transform duration-200 ${isVisible ? '' : '-rotate-90'}`} />
+        </h2>
         <p className="text-stone-500">5 different placements for the favorite/heart icon on product cards to improve visibility.</p>
       </div>
       
@@ -1047,7 +1500,7 @@ function HeartPlacementVariants() {
 // ----------------------------------------------------------------------------
 // Visual Cart Microanimations - Visual Feedback Options
 // ----------------------------------------------------------------------------
-function VisualCartMicroanimations() {
+function VisualCartMicroanimations({ isVisible, onToggle }: SectionComponentProps) {
   const [activeAnim, setActiveAnim] = useState<string | null>(null);
   const [soundEnabled, setSoundEnabled] = useState(false);
   const [soundVariant, setSoundVariant] = useState(1);
@@ -1134,7 +1587,13 @@ function VisualCartMicroanimations() {
   return (
     <section className="space-y-4">
       <div>
-        <h2 className="text-2xl font-bold text-stone-900 mb-2">Visual Cart Microanimations</h2>
+        <h2 
+          className="text-2xl font-bold text-stone-900 mb-2 cursor-pointer hover:bg-stone-50 p-2 -m-2 rounded transition-colors flex items-center gap-2"
+          onClick={onToggle}
+        >
+          Visual Cart Microanimations
+          <ChevronDown className={`w-5 h-5 text-stone-400 transition-transform duration-200 ${isVisible ? '' : '-rotate-90'}`} />
+        </h2>
         <p className="text-stone-500">Visual feedback options on header cart and favorite icons when items are added. Click "Add Item" to trigger animations.</p>
       </div>
       

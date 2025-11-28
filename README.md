@@ -1,36 +1,48 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# 🎉 Your Simplified Project
 
-## Getting Started
+## ✅ What You Have Now
 
-First, run the development server:
+- **ONE folder:** `/Users/admin/Documents/EUSTONE/eustone2-new/`
+- **ONE branch:** `main` (on GitHub)
+- **Simple setup:** Regular git repo (no worktrees!)
 
+## 🚀 Quick Start
+
+**To open in Cursor:**
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+open -a Cursor /Users/admin/Documents/EUSTONE/eustone2-new
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+**To start the server:**
+```bash
+cd /Users/admin/Documents/EUSTONE/eustone2-new
+npm install
+npm run dev
+```
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+**To save changes:**
+```bash
+git add .
+git commit -m "Your message"
+git push
+```
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## 📍 Your GitHub
 
-## Learn More
+- **Repository:** https://github.com/rsx247/eustone2.git
+- **Branch:** `main`
 
-To learn more about Next.js, take a look at the following resources:
+## 🎯 That's It!
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+You now have a simple, clean setup:
+- One folder to work in
+- One branch on GitHub
+- No confusion!
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+---
 
-## Deploy on Vercel
+**Note:** Your old worktrees are still at:
+- `/Users/admin/.cursor/worktrees/niks/eu-stone-gemini/`
+- `/Users/admin/Documents/EUSTONE/niks/`
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+You can delete them after verifying this new setup works! 🎉

@@ -1,6 +1,7 @@
 "use client";
 
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import { toast } from 'sonner';
 
 interface CartItem {
   id: string;
@@ -27,6 +28,7 @@ const CartContext = createContext<CartContextType | undefined>(undefined);
 
 export function CartProvider({ children }: { children: ReactNode }) {
   const [items, setItems] = useState<CartItem[]>([]);
+  const [isAdding, setIsAdding] = useState(false);
 
   // Load cart from localStorage on mount
   useEffect(() => {
@@ -42,16 +44,24 @@ export function CartProvider({ children }: { children: ReactNode }) {
   }, [items]);
 
   const addItem = (product: any, quantity: number = 1) => {
+    if (isAdding) return; // Prevent double calls
+    
+    setIsAdding(true);
     setItems(currentItems => {
       const existingItem = currentItems.find(item => item.id === product.id);
       
       if (existingItem) {
         // Update quantity if item already in cart
-        return currentItems.map(item =>
+        const updatedItems = currentItems.map(item =>
           item.id === product.id
             ? { ...item, quantity: item.quantity + quantity }
             : item
         );
+        toast.success(`Updated quantity: ${product.name}`, {
+          description: `Now ${existingItem.quantity + quantity} in cart`
+        });
+        setTimeout(() => setIsAdding(false), 100);
+        return updatedItems;
       } else {
         // Add new item
         let imageUrl = '/placeholder.jpg';
@@ -71,13 +81,25 @@ export function CartProvider({ children }: { children: ReactNode }) {
           categoryName: product.category?.name || 'Uncategorized'
         };
         
+        toast.success('Added to cart', {
+          description: product.name
+        });
+        setTimeout(() => setIsAdding(false), 100);
         return [...currentItems, newItem];
       }
     });
   };
 
   const removeItem = (id: string) => {
-    setItems(currentItems => currentItems.filter(item => item.id !== id));
+    setItems(currentItems => {
+      const item = currentItems.find(i => i.id === id);
+      if (item) {
+        toast.info('Removed from cart', {
+          description: item.name
+        });
+      }
+      return currentItems.filter(item => item.id !== id);
+    });
   };
 
   const updateQuantity = (id: string, quantity: number) => {

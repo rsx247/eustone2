@@ -1,41 +1,26 @@
 import Link from "next/link";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Box, LayoutDashboard, Map, FlaskConical, CheckCircle2, AlertCircle, TrendingUp } from "lucide-react";
-import { PrismaClient } from "@prisma/client";
+import { Box, LayoutDashboard, Map, FlaskConical, CheckCircle2, AlertCircle, TrendingUp, BarChart3, XCircle } from "lucide-react";
+import { prisma } from "@/lib/prisma";
+import { hasRealImages } from "@/lib/product-utils";
 
 export const dynamic = 'force-dynamic';
 
-const prisma = new PrismaClient();
-
 async function getQuickStats() {
-  const [totalProducts, productsWithImages, productsInStock, productsNoStock] = await Promise.all([
-    prisma.product.count(),
-    prisma.product.count({
-      where: {
-        images: {
-          not: {
-            equals: '["/placeholder.jpg"]'
-          }
-        }
-      }
-    }),
-    prisma.product.count({
-      where: {
-        stock: {
-          gt: 0
-        }
-      }
-    }),
-    prisma.product.count({
-      where: {
-        stock: 0
-      }
-    })
+  const [allProducts, productsInStock, productsNoStock] = await Promise.all([
+    prisma.product.findMany({ select: { images: true } }),
+    prisma.product.count({ where: { stock: { gt: 0 } } }),
+    prisma.product.count({ where: { stock: 0 } })
   ]);
 
+  // Use consistent image detection logic
+  const productsWithImages = allProducts.filter(p => hasRealImages(p.images)).length;
+  const missingImages = allProducts.length - productsWithImages;
+
   return {
-    totalProducts,
+    totalProducts: allProducts.length,
     productsWithImages,
+    missingImages,
     productsInStock,
     productsNoStock
   };
@@ -70,13 +55,19 @@ export default async function AdminDashboard() {
             <CheckCircle2 className="h-4 w-4 text-green-600" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{stats.productsWithImages}</div>
+            <div className="text-2xl font-bold text-green-600">{stats.productsWithImages}</div>
             <p className="text-xs text-stone-500">
               {stats.totalProducts > 0 
                 ? `${Math.round((stats.productsWithImages / stats.totalProducts) * 100)}% coverage`
                 : '0% coverage'
               }
             </p>
+            {stats.missingImages > 0 && (
+              <div className="flex items-center gap-1 mt-2 text-xs text-amber-600">
+                <AlertCircle className="h-3 w-3" />
+                <span>{stats.missingImages} missing</span>
+              </div>
+            )}
           </CardContent>
         </Card>
 
@@ -97,13 +88,13 @@ export default async function AdminDashboard() {
             <AlertCircle className="h-4 w-4 text-amber-600" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{stats.productsNoStock}</div>
+            <div className="text-2xl font-bold text-amber-600">{stats.productsNoStock}</div>
             <p className="text-xs text-stone-500">need restocking</p>
           </CardContent>
         </Card>
       </div>
 
-      {/* Quick Navigation */}
+      {/* Quick Navigation - Ordered to match sidebar menu */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         <Link href="/admin/products">
           <Card className="hover:shadow-lg transition-shadow cursor-pointer h-full">
@@ -121,17 +112,33 @@ export default async function AdminDashboard() {
           </Card>
         </Link>
 
-        <Link href="/admin/playground">
+        <Link href="/admin/analytics">
           <Card className="hover:shadow-lg transition-shadow cursor-pointer h-full">
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
-                <FlaskConical className="h-5 w-5" />
-                UI Playground
+                <BarChart3 className="h-5 w-5" />
+                Analytics
               </CardTitle>
             </CardHeader>
             <CardContent>
               <p className="text-sm text-stone-600">
-                Test and preview UI components, animations, and design variants in an interactive environment.
+                View comprehensive analytics, product statistics, category distribution, and performance metrics.
+              </p>
+            </CardContent>
+          </Card>
+        </Link>
+
+        <Link href="/admin/verify">
+          <Card className="hover:shadow-lg transition-shadow cursor-pointer h-full">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <CheckCircle2 className="h-5 w-5" />
+                Verification
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p className="text-sm text-stone-600">
+                Verify and validate product data, images, and metadata.
               </p>
             </CardContent>
           </Card>
@@ -169,17 +176,17 @@ export default async function AdminDashboard() {
           </Card>
         </Link>
 
-        <Link href="/admin/verify">
+        <Link href="/admin/playground">
           <Card className="hover:shadow-lg transition-shadow cursor-pointer h-full">
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
-                <CheckCircle2 className="h-5 w-5" />
-                Verification
+                <FlaskConical className="h-5 w-5" />
+                UI Playground
               </CardTitle>
             </CardHeader>
             <CardContent>
               <p className="text-sm text-stone-600">
-                Verify and validate product data, images, and metadata.
+                Test and preview UI components, animations, and design variants in an interactive environment.
               </p>
             </CardContent>
           </Card>

@@ -73,6 +73,8 @@ model Category {
   description String?
   image       String?
   products    Product[]
+  
+  @@index([slug])
 }
 
 model Product {
@@ -119,6 +121,13 @@ model Product {
 
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
+  
+  @@index([categoryId, stock])
+  @@index([slug])
+  @@index([stock])
+  @@index([price])
+  @@index([source])
+  @@index([verified])
 }
 
 model Order {

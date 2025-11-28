@@ -1,19 +1,21 @@
 import { prisma } from "@/lib/prisma";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-
-export const dynamic = 'force-dynamic';
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { AlertTriangle, CheckCircle, ExternalLink, Image as ImageIcon } from "lucide-react";
+import { AlertTriangle, CheckCircle, ExternalLink, Image as ImageIcon, XCircle, AlertCircle } from "lucide-react";
 import Link from "next/link";
+import { hasRealImages } from "@/lib/product-utils";
+
+export const dynamic = 'force-dynamic';
 
 export default async function VerifyPage() {
-  // Fetch anomalies
-  const missingImages = await prisma.product.findMany({
-    where: { images: { contains: 'placeholder' } },
-    include: { category: true },
-    take: 50
+  // Fetch all products and filter using consistent logic
+  const allProducts = await prisma.product.findMany({
+    include: { category: true }
   });
+  
+  // Use consistent image detection
+  const missingImages = allProducts.filter(p => !hasRealImages(p.images)).slice(0, 50);
 
   const missingSource = await prisma.product.findMany({
     where: { OR: [{ source: null }, { source: 'Unknown' }] },
@@ -111,22 +113,31 @@ export default async function VerifyPage() {
         </Card>
 
         <Card>
-          <CardHeader className="pb-3">
+          <CardHeader className="pb-3 flex flex-row items-center justify-between">
             <CardTitle className="text-sm font-medium text-stone-500">Issues Found</CardTitle>
+            <AlertTriangle className="h-4 w-4 text-amber-600" />
           </CardHeader>
           <CardContent>
             <div className="text-3xl font-bold text-amber-600">
               {missingImages.length + wrongCategory.length + missingSource.length}
             </div>
+            <p className="text-xs text-stone-500 mt-1">Requires attention</p>
           </CardContent>
         </Card>
 
         <Card>
-          <CardHeader className="pb-3">
+          <CardHeader className="pb-3 flex flex-row items-center justify-between">
             <CardTitle className="text-sm font-medium text-stone-500">Out of Stock</CardTitle>
+            <AlertCircle className="h-4 w-4 text-amber-600" />
           </CardHeader>
           <CardContent>
-            <div className="text-3xl font-bold text-stone-400">{zeroStock.length}</div>
+            <div className="text-3xl font-bold text-amber-600">{zeroStock.length}</div>
+            {zeroStock.length === 0 && (
+              <div className="flex items-center gap-1 mt-1 text-xs text-green-600">
+                <CheckCircle className="h-3 w-3" />
+                <span>All in stock</span>
+              </div>
+            )}
           </CardContent>
         </Card>
       </div>
@@ -219,13 +230,15 @@ export default async function VerifyPage() {
       )}
 
       {missingImages.length > 0 && (
-        <Card className="border-red-200 bg-red-50">
+        <Card className="border-amber-200 bg-amber-50">
           <CardHeader>
-            <CardTitle className="flex items-center text-red-900">
-              <ImageIcon className="mr-2 h-5 w-5" />
+            <CardTitle className="flex items-center text-amber-900">
+              <ImageIcon className="mr-2 h-5 w-5 text-amber-600" />
               Missing Images ({missingImages.length})
             </CardTitle>
-            <CardDescription>Products using placeholder images</CardDescription>
+            <CardDescription className="text-amber-800">
+              ⚠️ Products using placeholder images - These are NOT real product photos
+            </CardDescription>
           </CardHeader>
           <CardContent>
             <div className="space-y-2 max-h-96 overflow-y-auto">
@@ -292,13 +305,15 @@ export default async function VerifyPage() {
       )}
 
       {zeroPrice.length > 0 && (
-        <Card>
+        <Card className="border-red-200 bg-red-50">
           <CardHeader>
-            <CardTitle className="flex items-center">
-              <AlertTriangle className="mr-2 h-5 w-5 text-amber-500" />
+            <CardTitle className="flex items-center text-red-900">
+              <XCircle className="mr-2 h-5 w-5 text-red-600" />
               Zero Price ({zeroPrice.length})
             </CardTitle>
-            <CardDescription>Products with no price set</CardDescription>
+            <CardDescription className="text-red-800">
+              ❌ Products with no price set - Cannot be sold
+            </CardDescription>
           </CardHeader>
           <CardContent>
             <div className="space-y-2 max-h-96 overflow-y-auto">

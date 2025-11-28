@@ -243,18 +243,47 @@ export default function CheckoutPage() {
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4">
-                  <p className="text-sm text-blue-900 font-medium mb-2">
-                    🏦 Bank Transfer / Invoice
-                  </p>
-                  <p className="text-sm text-blue-800">
-                    You will receive an invoice with payment instructions after placing your order.
-                    Payment terms: Net 30 days for verified trade accounts.
-                  </p>
+                <div className="space-y-4">
+                  {/* Online Payment Options */}
+                  <div>
+                    <Label className="text-sm font-semibold mb-3 block">Online Payment</Label>
+                    <div className="grid grid-cols-2 gap-3 mb-4">
+                      <button
+                        type="button"
+                        className="p-4 border-2 border-stone-200 rounded-lg hover:border-stone-900 transition-colors text-left"
+                      >
+                        <div className="font-semibold text-sm mb-1">iDEAL</div>
+                        <div className="text-xs text-stone-500">Dutch bank transfer</div>
+                      </button>
+                      <button
+                        type="button"
+                        className="p-4 border-2 border-stone-200 rounded-lg hover:border-stone-900 transition-colors text-left"
+                      >
+                        <div className="font-semibold text-sm mb-1">Credit Card</div>
+                        <div className="text-xs text-stone-500">Visa, Mastercard, Amex</div>
+                      </button>
+                    </div>
+                    <p className="text-xs text-stone-500 mb-4">
+                      Powered by Mollie - Secure payment processing
+                    </p>
+                  </div>
+
+                  <Separator />
+
+                  {/* Bank Transfer Option */}
+                  <div>
+                    <Label className="text-sm font-semibold mb-3 block">Invoice / Bank Transfer</Label>
+                    <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                      <p className="text-sm text-blue-900 font-medium mb-2">
+                        🏦 Bank Transfer / Invoice
+                      </p>
+                      <p className="text-sm text-blue-800">
+                        You will receive an invoice with payment instructions after placing your order.
+                        Payment terms: Net 30 days for verified trade accounts.
+                      </p>
+                    </div>
+                  </div>
                 </div>
-                <p className="text-xs text-stone-500">
-                  Online payment options (iDEAL, Credit Card) will be available soon.
-                </p>
               </CardContent>
             </Card>
 

@@ -14,10 +14,12 @@ import { useFavorites } from "@/lib/favorites";
     const [isLoggedIn, setIsLoggedIn] = useState(false);
     const { itemCount, items } = useCart();
     const { favorites } = useFavorites();
-    const prevItemCountRef = useRef(0);
-    const prevFavoritesCountRef = useRef(0);
+    const prevItemCountRef = useRef(itemCount);
+    const prevFavoritesCountRef = useRef(favorites.length);
     const cartIconRef = useRef<HTMLDivElement>(null);
     const heartIconRef = useRef<HTMLDivElement>(null);
+    const cartInitialized = useRef(false);
+    const favoritesInitialized = useRef(false);
   
     useEffect(() => {
       setIsLoggedIn(localStorage.getItem('admin_logged_in') === 'true');
@@ -25,7 +27,15 @@ import { useFavorites } from "@/lib/favorites";
 
     // Ripple wave animation with high pitch sound
     const playRippleAnimation = (iconRef: React.RefObject<HTMLDivElement | null>, color: string) => {
-      if (!iconRef.current) return;
+      if (!iconRef.current) {
+        // Retry after a short delay if ref not ready
+        setTimeout(() => {
+          if (iconRef.current) {
+            playRippleAnimation(iconRef, color);
+          }
+        }, 50);
+        return;
+      }
       
       // Play high pitch sound (1200Hz)
       try {
@@ -65,7 +75,15 @@ import { useFavorites } from "@/lib/favorites";
 
     // Trigger animation when cart count increases
     useEffect(() => {
-      if (itemCount > prevItemCountRef.current && prevItemCountRef.current > 0) {
+      // Initialize on first render
+      if (!cartInitialized.current) {
+        cartInitialized.current = true;
+        prevItemCountRef.current = itemCount;
+        return;
+      }
+
+      // Trigger if count increased (including from 0 to 1)
+      if (itemCount > prevItemCountRef.current) {
         playRippleAnimation(cartIconRef, 'bg-blue-400/30');
       }
       prevItemCountRef.current = itemCount;
@@ -73,7 +91,15 @@ import { useFavorites } from "@/lib/favorites";
 
     // Trigger animation when favorites count increases
     useEffect(() => {
-      if (favorites.length > prevFavoritesCountRef.current && prevFavoritesCountRef.current > 0) {
+      // Initialize on first render
+      if (!favoritesInitialized.current) {
+        favoritesInitialized.current = true;
+        prevFavoritesCountRef.current = favorites.length;
+        return;
+      }
+
+      // Trigger if count increased (including from 0 to 1)
+      if (favorites.length > prevFavoritesCountRef.current) {
         playRippleAnimation(heartIconRef, 'bg-red-400/30');
       }
       prevFavoritesCountRef.current = favorites.length;
@@ -89,6 +115,7 @@ import { useFavorites } from "@/lib/favorites";
             src="/logo.webp" 
             alt="EU Stone Logo" 
             fill
+            sizes="(max-width: 768px) 200px, 200px"
             className="object-contain"
             priority
           />
@@ -155,7 +182,7 @@ import { useFavorites } from "@/lib/favorites";
                 <ShoppingCart className={`h-5 w-5 transition-all duration-300 ${
                   itemCount > 0 
                     ? 'text-blue-600' 
-                    : 'text-stone-600 group-hover:text-blue-600 group-hover:scale-110 group-active:scale-95'
+                    : 'text-stone-600 group-hover:scale-110 group-active:scale-95'
                 }`} />
               </div>
               {itemCount > 0 && (
@@ -189,28 +216,28 @@ import { useFavorites } from "@/lib/favorites";
           <nav className="container mx-auto flex flex-col space-y-3 px-4 sm:px-6 lg:px-8 py-4">
             <Link 
               href="/products" 
-              className="text-sm font-medium transition-colors hover:text-blue-600 text-stone-700"
+              className="text-sm font-medium transition-all hover:text-stone-900 text-stone-700"
               onClick={() => setMobileMenuOpen(false)}
             >
               Products
             </Link>
             <Link 
               href="/products?category=tools" 
-              className="text-sm font-medium transition-colors hover:text-blue-600 text-stone-700"
+              className="text-sm font-medium transition-all hover:text-stone-900 text-stone-700"
               onClick={() => setMobileMenuOpen(false)}
             >
               Tools
             </Link>
             <Link 
               href="/products?category=tiles" 
-              className="text-sm font-medium transition-colors hover:text-blue-600 text-stone-700"
+              className="text-sm font-medium transition-all hover:text-stone-900 text-stone-700"
               onClick={() => setMobileMenuOpen(false)}
             >
               Tiles
             </Link>
             <Link 
               href="/trade/register" 
-              className="text-sm font-medium transition-colors hover:text-blue-600 text-stone-700"
+              className="text-sm font-medium transition-all hover:text-stone-900 text-stone-700"
               onClick={() => setMobileMenuOpen(false)}
             >
               Trade Account

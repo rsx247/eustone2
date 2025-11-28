@@ -1,10 +1,11 @@
 "use client";
 
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import { toast } from 'sonner';
 
 interface FavoritesContextType {
   favorites: string[];
-  toggleFavorite: (productId: string) => void;
+  toggleFavorite: (productId: string, productName?: string) => void;
   isFavorited: (productId: string) => boolean;
 }
 
@@ -24,12 +25,21 @@ export function FavoritesProvider({ children }: { children: ReactNode }) {
     localStorage.setItem('favorites', JSON.stringify(favorites));
   }, [favorites]);
 
-  const toggleFavorite = (productId: string) => {
-    setFavorites(current => 
-      current.includes(productId)
-        ? current.filter(id => id !== productId)
-        : [...current, productId]
-    );
+  const toggleFavorite = (productId: string, productName?: string) => {
+    setFavorites(current => {
+      const isFavorited = current.includes(productId);
+      if (isFavorited) {
+        toast.info('Removed from favorites', {
+          description: productName || 'Product'
+        });
+        return current.filter(id => id !== productId);
+      } else {
+        toast.success('Added to favorites', {
+          description: productName || 'Product'
+        });
+        return [...current, productId];
+      }
+    });
   };
 
   const isFavorited = (productId: string) => favorites.includes(productId);

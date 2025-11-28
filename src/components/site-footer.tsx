@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import { Facebook, Instagram, Linkedin, Twitter, Send, Mail, Phone, MapPin, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -40,12 +41,21 @@ export function SiteFooter() {
   };
 
   return (
-    <footer className="bg-stone-900 text-stone-50 border-t border-stone-800">
+    <footer className="bg-stone-900 text-stone-50 border-t border-stone-800" suppressHydrationWarning>
       <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-12 md:py-16">
         <div className="grid grid-cols-1 md:grid-cols-4 gap-8 md:gap-12">
           {/* Brand Column */}
           <div className="col-span-1 md:col-span-2 space-y-4">
-            <h3 className="text-2xl font-bold tracking-tighter text-white">EU STONE</h3>
+            <Link href="/" className="inline-block">
+              <Image 
+                src="/logo-white.webp" 
+                alt="EU STONE" 
+                width={200}
+                height={40}
+                className="h-8 w-auto"
+                priority
+              />
+            </Link>
             <p className="text-stone-400 max-w-sm text-sm leading-relaxed">
               Premium wholesale natural stone and tile marketplace for trade professionals. 
               Direct from quarry to project.

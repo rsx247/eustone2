@@ -9,12 +9,13 @@ import { Button } from "@/components/ui/button";
 import { Lock, Heart, ChevronLeft, ChevronRight, Eye, ShoppingCart, FileText, Check } from "lucide-react";
 import { getThumbnailClass } from "@/lib/thumbnail-utils";
 import { useCart } from "@/lib/cart";
+import { getPlaceholderStockWarning, getStockBadgeClass } from "@/lib/stock-placeholder";
 
 interface ProductCardProps {
   product: any;
   isLoggedIn: boolean;
   onQuickView?: (product: any) => void;
-  onToggleFavorite?: (productId: string) => void;
+  onToggleFavorite?: (productId: string, productName?: string) => void;
   isFavorited?: boolean;
 }
 
@@ -48,6 +49,9 @@ export function ProductCard({ product, isLoggedIn, onQuickView, onToggleFavorite
     product.thumbnailAspectRatio,
     product.thumbnailFit
   );
+
+  // Get placeholder stock warning (10-15% of products will show warnings)
+  const stockWarning = getPlaceholderStockWarning(product.id);
 
   // Determine product type for CTA
   const categorySlug = product.category?.slug?.toLowerCase() || '';
@@ -93,7 +97,7 @@ export function ProductCard({ product, isLoggedIn, onQuickView, onToggleFavorite
   const handleFavoriteClick = (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
-    onToggleFavorite?.(product.id);
+    onToggleFavorite?.(product.id, product.name);
   };
 
   const handleAddToCart = (e: React.MouseEvent) => {
@@ -125,7 +129,7 @@ export function ProductCard({ product, isLoggedIn, onQuickView, onToggleFavorite
         onTouchStart={onTouchStart}
         onTouchMove={onTouchMove}
         onTouchEnd={onTouchEnd}
-        className="cursor-pointer -m-px relative focus:outline-none focus:ring-2 focus:ring-stone-400 focus:ring-offset-2"
+        className="cursor-pointer -m-px relative focus:outline-none focus:ring-2 focus:ring-stone-400 focus:ring-offset-2 pb-6"
       >
         <div className={`relative ${thumbClasses.container} bg-white flex items-center justify-center overflow-hidden`}>
           <Image
@@ -140,10 +144,10 @@ export function ProductCard({ product, isLoggedIn, onQuickView, onToggleFavorite
             }}
           />
 
-          {/* Stock Badge */}
-          {product.stock > 0 && (
-            <Badge className="absolute top-2 left-2 bg-green-600 text-white z-10">
-              In Stock
+          {/* Placeholder Stock Badge - Only shows for 10-15% of products */}
+          {stockWarning.show && (
+            <Badge className={`absolute top-2 left-2 ${getStockBadgeClass(stockWarning.variant)} z-10`}>
+              {stockWarning.message}
             </Badge>
           )}
 
@@ -163,19 +167,25 @@ export function ProductCard({ product, isLoggedIn, onQuickView, onToggleFavorite
           {/* Quick View Hint - Above Navigation with Matching Background */}
           {isImageHovered && !isNavHovered && (
             <div className="absolute bottom-[15px] left-1/2 -translate-x-1/2 z-10 animate-in fade-in slide-in-from-bottom-2 duration-200 pointer-events-none">
-              <div className="flex items-center gap-1.5 bg-stone-900/80 backdrop-blur-sm px-3 py-1.5 text-xs font-medium text-white rounded-full">
-                <Eye className="w-3.5 h-3.5" />
+              <div className="flex items-center gap-1.5 bg-stone-900/80 backdrop-blur-sm px-3 py-1.5 text-xs font-medium text-white rounded-full whitespace-nowrap">
+                <Eye className="w-3.5 h-3.5 flex-shrink-0" />
                 <span>Quick View</span>
               </div>
             </div>
           )}
         </div>
         
-        {/* Image Navigation - Chevrons and Dots on Same Line, Outside Image */}
-        {images.length > 1 && (isImageHovered || isNavHovered) && (
+        {/* Image Navigation - Chevrons and Dots on Same Line, Bridge Area */}
+        {images.length > 1 && (
           <div 
-            className="absolute -bottom-6 left-1/2 -translate-x-1/2 flex items-center gap-2 z-10"
-            onMouseEnter={() => setIsNavHovered(true)}
+            className={`absolute left-1/2 -translate-x-1/2 flex items-center gap-2 z-10 transition-opacity duration-200 ${
+              (isImageHovered || isNavHovered) ? 'opacity-100' : 'opacity-0 pointer-events-none'
+            }`}
+            style={{ bottom: '8px' }}
+            onMouseEnter={() => {
+              setIsNavHovered(true);
+              setIsImageHovered(true);
+            }}
             onMouseLeave={() => {
               setIsNavHovered(false);
               if (!isImageHovered) {
@@ -201,19 +211,13 @@ export function ProductCard({ product, isLoggedIn, onQuickView, onToggleFavorite
                     e.stopPropagation();
                     setCurrentImageIndex(idx);
                   }}
-                  className={`h-1.5 rounded-full transition-all duration-300 relative ${
+                  className={`rounded-full transition-all duration-300 ${
                     idx === currentImageIndex 
-                      ? 'w-4 bg-stone-300' 
-                      : 'w-1.5 bg-stone-400/60 hover:bg-stone-600/80'
+                      ? 'w-2 h-2 bg-stone-900' 
+                      : 'w-1.5 h-1.5 bg-stone-400/60 hover:bg-stone-600/80'
                   }`}
                   aria-label={`Go to image ${idx + 1}`}
-                >
-                  {idx === currentImageIndex && (
-                    <div className="absolute inset-0 flex items-center justify-center">
-                      <div className="w-1 h-1 rounded-full bg-stone-900" />
-                    </div>
-                  )}
-                </button>
+                />
               ))}
             </div>
             
@@ -233,7 +237,7 @@ export function ProductCard({ product, isLoggedIn, onQuickView, onToggleFavorite
         {/* Category - Clickable */}
         <Link 
           href={`/products?category=${product.category?.slug || ''}`}
-          className="text-xs text-stone-500 mb-1 hover:text-blue-600 transition-colors inline-block w-fit"
+          className="text-xs text-stone-500 mb-1 hover:underline transition-all inline-block w-fit"
         >
           {product.category?.name || 'Uncategorized'}
         </Link>
@@ -241,9 +245,9 @@ export function ProductCard({ product, isLoggedIn, onQuickView, onToggleFavorite
         {/* Product Name - Clickable - Goes to Full Product Page */}
         <Link 
           href={`/products/${product.slug}`}
-          className="hover:text-blue-600 transition-colors mb-auto"
+          className="mb-auto"
         >
-          <h3 className="font-semibold text-sm text-stone-900 line-clamp-2 h-10 mb-2">
+          <h3 className="font-semibold text-sm text-stone-900 line-clamp-2 h-10 mb-2 hover:text-stone-700 transition-colors">
             {product.name}
           </h3>
         </Link>
@@ -271,23 +275,15 @@ export function ProductCard({ product, isLoggedIn, onQuickView, onToggleFavorite
               className={`w-full transition-all duration-200 overflow-hidden relative ${
                 isAddingToCart 
                   ? 'bg-green-600 hover:bg-green-600 animate-[fadeOutGreen_2s_ease-out_forwards]' 
-                  : 'bg-stone-900 hover:bg-stone-900/80'
+                  : 'bg-stone-900 hover:bg-stone-900/80 active:translate-y-[1px] active:shadow-inner'
               }`}
-              onMouseDown={(e) => {
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
                 if (!isAddingToCart) {
-                  e.currentTarget.style.transform = 'translateY(1px)';
-                  e.currentTarget.style.boxShadow = 'inset 0 2px 4px rgba(0,0,0,0.2)';
+                  handleAddToCart(e);
                 }
               }}
-              onMouseUp={(e) => {
-                e.currentTarget.style.transform = '';
-                e.currentTarget.style.boxShadow = '';
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.transform = '';
-                e.currentTarget.style.boxShadow = '';
-              }}
-              onClick={handleAddToCart}
             >
               {isAddingToCart ? (
                 <span className="flex items-center justify-center animate-in slide-in-from-right-4 duration-300">

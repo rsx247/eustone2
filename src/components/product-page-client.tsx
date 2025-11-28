@@ -11,6 +11,8 @@ import Image from "next/image";
 import { QuoteRequestButton } from "@/components/quote-request-button";
 import { useCart } from "@/lib/cart";
 import { useRouter } from "next/navigation";
+import { useRecentlyViewed } from "@/lib/recently-viewed";
+import { getPlaceholderStockWarning, getStockBadgeClass } from "@/lib/stock-placeholder";
 
 export function ProductPageClient({ product }: { product: any }) {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
@@ -18,11 +20,16 @@ export function ProductPageClient({ product }: { product: any }) {
   const [addedToCart, setAddedToCart] = useState(false);
   const [quantity, setQuantity] = useState(1);
   const { addItem } = useCart();
+  const { addToRecentlyViewed } = useRecentlyViewed();
   const router = useRouter();
 
   useEffect(() => {
     setIsLoggedIn(localStorage.getItem('admin_logged_in') === 'true');
-  }, []);
+    // Track product view
+    if (product?.id) {
+      addToRecentlyViewed(product.id);
+    }
+  }, [product?.id, addToRecentlyViewed]);
 
   const handleAddToCart = () => {
     addItem(product, quantity);
@@ -37,6 +44,9 @@ export function ProductPageClient({ product }: { product: any }) {
   const handleIncreaseQuantity = () => {
     setQuantity(prev => prev + 1);
   };
+
+  // Get placeholder stock warning (10-15% of products will show warnings)
+  const stockWarning = getPlaceholderStockWarning(product.id);
 
   let productImages: string[] = ["/placeholder.jpg"];
   try {
@@ -80,16 +90,20 @@ export function ProductPageClient({ product }: { product: any }) {
                 <button
                   key={index}
                   onClick={() => setSelectedImage(index)}
-                  className={`aspect-square bg-white rounded border-2 overflow-hidden relative transition-all ${
-                    selectedImage === index ? 'border-blue-600 ring-2 ring-blue-200' : 'border-stone-200 hover:border-stone-400'
+                  className={`aspect-square bg-white rounded relative transition-all ${
+                    selectedImage === index 
+                      ? 'border-2 border-blue-600 shadow-lg shadow-blue-200/50' 
+                      : 'border-2 border-stone-200 hover:border-stone-400'
                   }`}
                 >
-                  <Image 
-                    src={img}
-                    alt={`${product.name} - Image ${index + 1}`}
-                    fill
-                    className="object-contain p-1"
-                  />
+                  <div className="absolute inset-0 overflow-hidden rounded">
+                    <Image 
+                      src={img}
+                      alt={`${product.name} - Image ${index + 1}`}
+                      fill
+                      className="object-contain p-1"
+                    />
+                  </div>
                 </button>
               ))}
             </div>
@@ -172,7 +186,11 @@ export function ProductPageClient({ product }: { product: any }) {
                   <Button 
                     size="lg" 
                     className="w-full" 
-                    onClick={handleAddToCart}
+                    onClick={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      handleAddToCart();
+                    }}
                     disabled={addedToCart}
                   >
                     {addedToCart ? (
@@ -233,9 +251,15 @@ export function ProductPageClient({ product }: { product: any }) {
 
           {/* Stock Info */}
           <div className="flex items-center gap-2">
-            <Badge variant={product.stock > 0 ? "default" : "destructive"}>
-              {product.stock > 0 ? `${product.stock} in stock` : 'Out of Stock'}
-            </Badge>
+            {stockWarning.show ? (
+              <Badge className={getStockBadgeClass(stockWarning.variant)}>
+                {stockWarning.message}
+              </Badge>
+            ) : (
+              <Badge variant="default" className="bg-green-600 text-white">
+                In Stock
+              </Badge>
+            )}
           </div>
 
           {/* Description */}

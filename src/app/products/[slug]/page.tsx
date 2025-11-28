@@ -7,6 +7,9 @@ import Link from "next/link";
 import Image from "next/image";
 import { prisma } from "@/lib/prisma";
 
+// Cache product pages for 60 seconds
+export const revalidate = 60;
+
 async function getProduct(slug: string) {
   return await prisma.product.findUnique({
     where: { slug },
@@ -32,6 +35,7 @@ export default async function ProductPage({ params }: { params: Promise<{ slug: 
 
   if (!product) return notFound();
 
+  // Fetch related products in parallel (if needed)
   const relatedProducts = await getRelatedProducts(product.categoryId, product.id);
 
   // Serialize product to convert Decimal to number for client components
@@ -64,7 +68,7 @@ export default async function ProductPage({ params }: { params: Promise<{ slug: 
               } catch (e) {}
 
               return (
-                <Card key={related.id} className="group overflow-hidden hover:shadow-lg transition-all">
+                <Card key={related.id} className="group overflow-hidden hover:shadow-lg transition-all flex flex-col">
                   <div className="relative aspect-[4/3] bg-white flex items-center justify-center">
                     <Image 
                       src={imageUrl}
@@ -73,13 +77,13 @@ export default async function ProductPage({ params }: { params: Promise<{ slug: 
                       className="object-contain p-2 group-hover:scale-105 transition-transform duration-500"
                     />
                   </div>
-                  <CardContent className="p-3">
+                  <CardContent className="p-3 flex-1 flex flex-col">
                     <div className="text-xs text-stone-500 mb-1">{related.category.name}</div>
-                    <h3 className="font-semibold text-sm text-stone-900 line-clamp-2">
+                    <h3 className="font-semibold text-sm text-stone-900 line-clamp-2 mb-auto min-h-[2.5rem]">
                       {related.name}
                     </h3>
                   </CardContent>
-                  <CardFooter className="p-3 pt-0">
+                  <CardFooter className="p-3 pt-0 mt-auto">
                     <Button size="sm" variant="outline" className="w-full" asChild>
                       <Link href={`/products/${related.slug}`}>View</Link>
                     </Button>

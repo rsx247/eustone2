@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { Input } from "@/components/ui/input";
-import { Minus, Plus, X, ShoppingBag, ArrowLeft } from "lucide-react";
+import { Minus, Plus, X, ShoppingBag, ArrowLeft, Save } from "lucide-react";
 import Link from "next/link";
 import Image from "next/image";
 import { useCart } from "@/lib/cart";
@@ -69,7 +69,7 @@ export default function CartPage() {
                       <div>
                         <Link 
                           href={`/products/${item.slug}`}
-                          className="font-semibold text-stone-900 hover:text-blue-600 line-clamp-2"
+                          className="font-semibold text-stone-900 hover:text-stone-700 transition-colors line-clamp-2"
                         >
                           {item.name}
                         </Link>
@@ -184,6 +184,14 @@ export default function CartPage() {
               </div>
             </CardContent>
           </Card>
+          
+          {/* Save Cart Button */}
+          <Button variant="outline" className="w-full mt-4" asChild>
+            <Link href="/cart/save">
+              <Save className="w-4 h-4 mr-2" />
+              Save Cart
+            </Link>
+          </Button>
         </div>
       </div>
     </div>
