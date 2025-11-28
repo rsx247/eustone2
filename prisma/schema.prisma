@@ -1,0 +1,173 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  CUSTOMER
+  TRADE    // Fabricators, Architects (gets special pricing)
+  VENDOR   // Can manage own products
+  ADMIN    // Platform owner
+}
+
+enum OrderStatus {
+  PENDING_QUOTE
+  PAYMENT_PENDING
+  PROCESSING
+  SHIPPED
+  DELIVERED
+  CANCELLED
+}
+
+model User {
+  id            String    @id @default(cuid())
+  name          String?
+  email         String    @unique
+  password      String?   // Hashed
+  image         String?
+  role          Role      @default(CUSTOMER)
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  // Trade specific
+  tradeProfile  TradeProfile?
+  
+  // Vendor specific
+  vendorProfile VendorProfile?
+
+  orders        Order[]
+  reviews       Review[]
+}
+
+model TradeProfile {
+  id            String @id @default(cuid())
+  userId        String @unique
+  user          User   @relation(fields: [userId], references: [id])
+  companyName   String
+  vatNumber     String?
+  kvkNumber     String? // Chamber of Commerce
+  isVerified    Boolean @default(false)
+}
+
+model VendorProfile {
+  id            String @id @default(cuid())
+  userId        String @unique
+  user          User   @relation(fields: [userId], references: [id])
+  storeName     String
+  description   String?
+  location      String?
+  products      Product[]
+}
+
+model Category {
+  id          String    @id @default(cuid())
+  name        String    @unique // e.g., "Travertin", "Onyx"
+  slug        String    @unique
+  description String?
+  image       String?
+  products    Product[]
+}
+
+model Product {
+  id          String   @id @default(cuid())
+  name        String
+  slug        String   @unique
+  description String
+  
+  // Pricing
+  price       Decimal  // Public MSRP
+  tradePrice  Decimal? // Hidden price for verified trade
+  unit        String   // "m2", "piece", "slab"
+
+  // Stone Specifics
+  material    String?  // Marble, Granite, etc.
+  finish      String?  // Polished, Honed, Leather
+  thickness   String?  // "2cm", "3cm"
+  origin      String?  // "Italy", "Turkey"
+  
+  // Inventory / Lot Management
+  isLot       Boolean  @default(false) // If true, sold as a specific bundle
+  lotNumber   String?
+  stock       Int      @default(0)
+  
+  // Media
+  images      String   // JSON string of image URLs
+  thumbnailAspectRatio String? @default("auto") // "auto", "square", "portrait", "landscape", "wide"
+  thumbnailFit String? @default("cover") // "cover" or "contain"
+  
+  // NEW: Data Quality & Tracking
+  verified    Boolean  @default(false) // Admin has verified product data
+  source      String?  // "Arsenius", "Marmermarkt", or null
+  legacyCategoryId Int? // Original category ID from source database
+  
+  // Relations
+  categoryId  String
+  category    Category @relation(fields: [categoryId], references: [id])
+  
+  vendorId    String?
+  vendor      VendorProfile? @relation(fields: [vendorId], references: [id])
+
+  orderItems  OrderItem[]
+  reviews     Review[]
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model Order {
+  id            String      @id @default(cuid())
+  userId        String?
+  user          User?       @relation(fields: [userId], references: [id])
+  
+  status        OrderStatus @default(PENDING_QUOTE)
+  total         Decimal
+  
+  // Logistics
+  shippingAddress String?
+  requiresLiftgate Boolean @default(false)
+  
+  items         OrderItem[]
+  
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+}
+
+model OrderItem {
+  id        String  @id @default(cuid())
+  orderId   String
+  order     Order   @relation(fields: [orderId], references: [id])
+  
+  productId String
+  product   Product @relation(fields: [productId], references: [id])
+  
+  quantity  Int
+  price     Decimal // Snapshot of price at time of order
+}
+
+model Review {
+  id        String   @id @default(cuid())
+  rating    Int
+  comment   String?
+  
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+  
+  productId String
+  product   Product  @relation(fields: [productId], references: [id])
+  
+  createdAt DateTime @default(now())
+}
+
+model NewsletterSubscriber {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+}
